@@ -1,0 +1,16 @@
+version: "3.1"
+services:
+  bot:
+    build: .
+    volumes:
+      - ./data:/data
+    restart: unless-stopped
+    environment:
+      USERNAME: ${USERNAME}
+      PASSWORD: ${PASSWORD}
+      SCHOOL: ${SCHOOL}
+      BASEURL: ${BASEURL}
+      CLASS: ${CLASS}
+      WEBHOOK_ID: ${WEBHOOK_ID}
+      WEBHOOK_TOKEN: ${WEBHOOK_TOKEN}
+
