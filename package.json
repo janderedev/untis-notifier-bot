@@ -1,0 +1,23 @@
+{
+  "name": "untis-bot",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev": "tsc && node dist/index"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@types/node": "^17.0.21",
+    "discord.js": "^13.6.0",
+    "dotenv": "^16.0.0",
+    "enmap": "^5.8.8",
+    "log75": "^2.2.0",
+    "webuntis": "^1.18.0"
+  },
+  "devDependencies": {
+    "typescript": "^4.6.2"
+  }
+}
