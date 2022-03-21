@@ -1,6 +1,6 @@
 import { config } from 'dotenv'; config();
 
-import WebUntis, { Lesson, LoginSessionInformations, ShortData, Subject } from "webuntis";
+import WebUntis, { Lesson, LoginSessionInformations, ShortData } from "webuntis";
 import { WebhookClient, MessageEmbed } from 'discord.js';
 import Logger, { LogLevel } from "log75";
 import Enmap from 'enmap';
