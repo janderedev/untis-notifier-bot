@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "dev": "yarn build && yarn run",
+    "dev": "yarn run build && yarn run start",
     "build": "tsc",
     "start": "node dist/index"
   },

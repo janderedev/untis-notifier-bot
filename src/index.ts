@@ -6,7 +6,7 @@ import Logger, { LogLevel } from "log75";
 import Enmap from 'enmap';
 
 const logger = new Logger(LogLevel.Debug);
-let { USERNAME, PASSWORD, SCHOOL, BASEURL, CLASS, GET_CLASSES, DB_DIR, WEBHOOK_ID, WEBHOOK_TOKEN } = process.env;
+let { USERNAME, PASSWORD, SCHOOL, BASEURL, CLASS, GET_CLASSES, DB_DIR, WEBHOOK_ID, WEBHOOK_TOKEN, MESSAGE_CONTENT } = process.env;
 
 for (const i of ['USERNAME', 'PASSWORD', 'SCHOOL', 'BASEURL', 'WEBHOOK_ID', 'WEBHOOK_TOKEN']) {
     if (!process.env[i]) {
@@ -133,7 +133,7 @@ const tick = async () => {
                     )
                     .setFooter({ text: `Lesson ID: ${item.id}` });
 
-                    await whClient.send({ embeds: [ embed ] });
+                    await whClient.send({ embeds: [ embed ], content: MESSAGE_CONTENT || undefined });
                     TIMETABLE_DB.set(String(item.id), item);
             }
         }
