@@ -52,6 +52,7 @@ const tick = async () => {
         logger.done(`Fetched ${timetable.length} items`);
 
         let newItems = 0;
+        let embeds: MessageEmbed[] = [];
         for (const item of timetable) {
             if (!TIMETABLE_DB.has(String(item.id))) {
                 TIMETABLE_DB.set(String(item.id), item);
@@ -112,15 +113,15 @@ const tick = async () => {
                     Number(String(item.endTime).substring(2, 4)),
                 ];
 
-                const startDate = new Date()
+                const startDate = new Date();
                 startDate.setFullYear(year, month-1, day);
                 startDate.setHours(startHour);
                 startDate.setMinutes(startMin);
 
-                const endDate = new Date()
-                startDate.setFullYear(year, month-1, day);
-                startDate.setHours(endHour);
-                startDate.setMinutes(endMin);
+                const endDate = new Date();
+                endDate.setFullYear(year, month-1, day);
+                endDate.setHours(endHour);
+                endDate.setMinutes(endMin);
 
                 embed
                     .setTitle('Timetable update')
@@ -133,11 +134,19 @@ const tick = async () => {
                     )
                     .setFooter({ text: `Lesson ID: ${item.id}` });
 
-                    await whClient.send({ embeds: [ embed ], content: MESSAGE_CONTENT || undefined });
+                    embeds.push(embed);
                     TIMETABLE_DB.set(String(item.id), item);
             }
         }
-        
+
+        if (embeds.length > 10) {
+            for (let i = 0; i < embeds.length; i += 10) {
+                await whClient.send({ embeds: embeds.slice(i, i+10), content: (MESSAGE_CONTENT && i == 0) ? MESSAGE_CONTENT : undefined });
+            }
+        } else if (embeds.length > 0) {
+            await whClient.send({ content: MESSAGE_CONTENT || undefined, embeds });
+        }
+
         if (newItems > 0) logger.info(`Discovered ${newItems} new timetable entries`);
     } catch(e) {
         console.error(e);
