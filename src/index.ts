@@ -1,6 +1,6 @@
 import { config } from 'dotenv'; config();
 
-import WebUntis, { Lesson, LoginSessionInformations, ShortData } from "webuntis";
+import WebUntis, { Lesson, LoginSessionInformations, ShortData, Timegrid } from "webuntis";
 import { WebhookClient, MessageEmbed } from 'discord.js';
 import Logger, { LogLevel } from "log75";
 import Enmap from 'enmap';
@@ -20,6 +20,7 @@ const TIMETABLE_DB: Enmap<string, Lesson> = new Enmap({ name: 'timetable', dataD
 const whClient = new WebhookClient({ id: WEBHOOK_ID!, token: WEBHOOK_TOKEN! });
 const untis = new WebUntis(SCHOOL!, USERNAME!, PASSWORD!, BASEURL!);
 let session: LoginSessionInformations|null = null;
+let timegrid: Timegrid[]|null = null;
 
 const tick = async () => {
     try {
@@ -50,6 +51,9 @@ const tick = async () => {
             WebUntis.TYPES.CLASS,
         );
         logger.done(`Fetched ${timetable.length} items`);
+
+        timegrid = await untis.getTimegrid();
+        logger.done('Fetched time grid');
 
         let newItems = 0;
         let embeds: MessageEmbed[] = [];
@@ -99,37 +103,19 @@ const tick = async () => {
             if (changed) {
                 logger.info('Timetable update detected');
 
-                const [ year, month, day ] = [
-                    Number(String(item.date).substring(0, 4)),
-                    Number(String(item.date).substring(4, 6)),
-                    Number(String(item.date).substring(6, 8)),
-                ];
-                const [ startHour, startMin ] = [
-                    Number(String(item.startTime).substring(0, 2)),
-                    Number(String(item.startTime).substring(2, 4)),
-                ];
-                const [ endHour, endMin ] = [
-                    Number(String(item.endTime).substring(0, 2)),
-                    Number(String(item.endTime).substring(2, 4)),
-                ];
+                const startDate = parseUntisTime(item.date, item.startTime);
+                const endDate = parseUntisTime(item.date, item.endTime);
 
-                const startDate = new Date();
-                startDate.setFullYear(year, month-1, day);
-                startDate.setHours(startHour);
-                startDate.setMinutes(startMin);
-
-                const endDate = new Date();
-                endDate.setFullYear(year, month-1, day);
-                endDate.setHours(endHour);
-                endDate.setMinutes(endMin);
+                const startStr = printTime(startDate, 'START');
+                const endStr = printTime(endDate, 'END');
+                let timeStr = startStr == endStr ? startStr : `${startStr} to ${endStr}`;
 
                 embed
                     .setTitle('Timetable update')
                     .setColor('#ff6033')
                     .setDescription(
                         `<t:${Math.round(startDate.getTime()/1000)}:D>` +
-                        `, from <t:${Math.round(startDate.getTime()/1000)}:t>` +
-                        ` until <t:${Math.round(endDate.getTime()/1000)}:t>` +
+                        `, ${timeStr}` +
                         ` (<t:${Math.round(startDate.getTime()/1000)}:R>)`
                     )
                     .setFooter({ text: `Lesson ID: ${item.id}` });
@@ -153,7 +139,7 @@ const tick = async () => {
 
         // We assume that our session might have gotten revoked
         session = null;
-        untis.logout().catch(e => logger.error(e));
+        untis.logout().catch(e => console.error(e));
     }
 }
 
@@ -166,4 +152,46 @@ const printShortData = (sub: ShortData[]) => sub
 
 const hasChanged = (a: ShortData[], b: ShortData[]) => {
     return printShortData(a) != printShortData(b);
+}
+
+const printTime = (time: Date, search: 'START'|'END'): string => {
+    const discordTS = () => `<t:${Math.round(time.getTime()/1000)}:t>`;
+
+    const weekday = time.getDay() + 1; // What dumbass decided to start the week at 2
+
+    // i hate this
+    let h = `${time.getHours()}`; if (h.length == 1) h = `0${h}`;
+    let m = `${time.getMinutes()}`; if (m.length == 1) m = `0${m}`;
+    const timeNum = Number(`${h}${m}`);
+
+    const grid = timegrid?.find(t => t.day == weekday);
+    if (!grid) return discordTS();
+
+    const unit = grid.timeUnits.find(t => (search == 'END' ? t.endTime : t.startTime) == timeNum);
+    if (!unit) return discordTS();
+
+    return `lesson **${unit.name}**`;
+}
+
+const parseUntisTime = (dateNum: number, timeNum: number): Date => {
+    const date = new Date();
+
+    const [ year, month, day ] = [
+        Number(String(dateNum).substring(0, 4)),
+        Number(String(dateNum).substring(4, 6)),
+        Number(String(dateNum).substring(6, 8)),
+    ];
+
+    const offset = String(timeNum).length == 3 ? 0 : 1;
+
+    const [ startHour, startMin ] = [
+        Number(String(timeNum).substring(0, 1+offset)),
+        Number(String(timeNum).substring(1+offset, 3+offset)),
+    ];
+
+    date.setFullYear(year, month-1, day);
+    date.setHours(startHour);
+    date.setMinutes(startMin);
+
+    return date;
 }
